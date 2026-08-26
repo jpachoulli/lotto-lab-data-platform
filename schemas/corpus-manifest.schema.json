@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://lotto-lab.example/schemas/corpus-manifest.schema.json",
+  "title": "CorpusManifest", "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "corpusVersion", "generatedAtUtc", "bundles"],
+  "properties": {"schemaVersion": {"type": "integer", "minimum": 1}, "corpusVersion": {"type": "string", "minLength": 1}, "generatedAtUtc": {"type": "string", "format": "date-time"}, "bundles": {"type": "array", "items": {"$ref": "#/$defs/bundle"}}},
+  "$defs": {"bundle": {"type": "object", "additionalProperties": false, "required": ["gameId", "corpusVersion", "recordCount", "earliestDrawDate", "latestDrawDate", "analyticalFingerprint", "bundleSha256", "evidenceBundleSha256"], "properties": {"gameId": {"type": "string", "minLength": 1}, "corpusVersion": {"type": "string", "minLength": 1}, "recordCount": {"type": "integer", "minimum": 0}, "earliestDrawDate": {"type": ["string", "null"], "format": "date"}, "latestDrawDate": {"type": ["string", "null"], "format": "date"}, "analyticalFingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "bundleSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "evidenceBundleSha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}}}}
+}

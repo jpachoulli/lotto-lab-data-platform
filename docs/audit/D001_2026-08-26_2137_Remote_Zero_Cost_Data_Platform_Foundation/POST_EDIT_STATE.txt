@@ -1,0 +1,15 @@
+Captured after implementation: 2026-08-26 UTC
+Repository name: lotto-lab-data-platform
+Workspace: GitHub Codespace shiny-guide-jpgx59gw7whg4j
+pwd: /workspaces/lotto-lab-data-platform
+Remote: https://github.com/jpachoulli/lotto-lab-data-platform
+Branch: main
+HEAD: 560b80a451b66d3db5134b175e1a3523bf56ef59
+origin/main: 560b80a451b66d3db5134b175e1a3523bf56ef59
+Tracked file count: 1
+Untracked intended DATA-1 file count: 37
+Modified tracked file count: 0
+Staged file count: 0
+Gradle: 8.10.2
+Kotlin plugin: 2.0.21
+JVM: Eclipse Temurin 17.0.20+8

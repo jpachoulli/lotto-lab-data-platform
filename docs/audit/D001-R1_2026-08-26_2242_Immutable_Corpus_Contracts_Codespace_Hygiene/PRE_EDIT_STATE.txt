@@ -1,0 +1,13 @@
+Captured UTC: 2026-08-26T22:42:38Z
+Workspace: /workspaces/lotto-lab-data-platform
+Environment: GitHub Codespace shiny-guide-jpgx59gw7whg4j
+Remote: https://github.com/jpachoulli/lotto-lab-data-platform
+Branch: main
+HEAD: 560b80a451b66d3db5134b175e1a3523bf56ef59
+origin/main: 560b80a451b66d3db5134b175e1a3523bf56ef59
+Staged: 0
+Modified tracked: 0
+Predecessor export SHA: 3ce80985cb2fff1ae441e9eb8c7fbbed0d3148fe8056c254dfb76926fc56323e
+Predecessor export integrity: PASS
+Predecessor regular files: 38
+D001 live manifest: 37/37 MATCH; 0 missing; 0 mismatched

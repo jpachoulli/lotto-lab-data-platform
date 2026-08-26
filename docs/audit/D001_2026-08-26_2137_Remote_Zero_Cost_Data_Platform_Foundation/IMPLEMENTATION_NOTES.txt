@@ -1,0 +1,9 @@
+DATA-1 provides a Kotlin/JVM-only contract and validation foundation with no acquisition implementation.
+
+Analytical fingerprints include only gameId, eraId, drawDate, normalized session, main values, and bonus values. Records are sorted canonically and hashed as UTF-8 with SHA-256 lowercase hex.
+
+Validation fails closed. It resolves exactly one inclusive/exclusive era, checks accepted status and evidence, rejects samples/future/invalid rules, normalizes unordered games, preserves ordered games, deduplicates matching evidence by stableId, and quarantines every record in a conflicting canonical identity.
+
+JSON Schema flexibility is intentional only where the Kotlin contract is nullable. drawSession and optional dates/identifiers/hash fields accept null. extraDrawData is intentionally an opaque string in the Kotlin public-metadata contract because DATA-1 defines no cross-source metadata vocabulary. All five requested schemas reject undeclared properties.
+
+No historical data, database driver, Firebase SDK, HTTP library, or Android dependency was added.

@@ -1,0 +1,15 @@
+DATA_1_COMPLETE_IF_ACCEPTED=YES
+
+NEXT_INCREMENT=DATA-2
+
+DATA_2_PURPOSE=
+Reconcile the current accepted Android game registry,
+the historical 93-game acquisition matrix,
+and all already-acquired official historical draw datasets.
+
+MASS_NEW_SOURCE_ACQUISITION_STARTED=NO
+
+REAL_LOTTERY_NONLINEAR_ANALYSIS_STARTED=NO
+
+S18_STARTED=NO
+S19_STARTED=NO

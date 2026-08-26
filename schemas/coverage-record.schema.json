@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://lotto-lab.example/schemas/coverage-record.schema.json",
+  "title": "CoverageRecord", "type": "object", "additionalProperties": false,
+  "required": ["gameId", "eraId", "earliestKnownDraw", "latestKnownDraw", "expectedDrawCount", "validatedDrawCount", "missingDrawCount", "conflictingDrawCount", "coveragePercent", "sourceStatus", "automationStatus"],
+  "properties": {"gameId": {"type": "string", "minLength": 1}, "eraId": {"type": "string", "minLength": 1}, "earliestKnownDraw": {"type": ["string", "null"], "format": "date"}, "latestKnownDraw": {"type": ["string", "null"], "format": "date"}, "expectedDrawCount": {"type": ["integer", "null"], "minimum": 0}, "validatedDrawCount": {"type": "integer", "minimum": 0}, "missingDrawCount": {"type": ["integer", "null"], "minimum": 0}, "conflictingDrawCount": {"type": "integer", "minimum": 0}, "coveragePercent": {"type": ["number", "null"], "minimum": 0, "maximum": 100}, "sourceStatus": {"type": "string", "minLength": 1}, "automationStatus": {"type": "string", "minLength": 1}}
+}

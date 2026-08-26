@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://lotto-lab.example/schemas/source-evidence.schema.json",
+  "title": "SourceEvidenceRecord", "type": "object", "additionalProperties": false,
+  "required": ["evidenceId", "sourceId", "sourceOrganization", "canonicalSourceUrl", "sourceDatasetId", "retrievedAtUtc", "rawSha256", "parserVersion", "termsReference"],
+  "properties": {"evidenceId": {"type": "string", "minLength": 1}, "sourceId": {"type": "string", "minLength": 1}, "sourceOrganization": {"type": "string", "minLength": 1}, "canonicalSourceUrl": {"type": "string", "format": "uri"}, "sourceDatasetId": {"type": ["string", "null"]}, "retrievedAtUtc": {"type": "string", "format": "date-time"}, "rawSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "parserVersion": {"type": "string", "minLength": 1}, "termsReference": {"type": ["string", "null"]}}
+}

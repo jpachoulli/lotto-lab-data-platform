@@ -1,0 +1,38 @@
+name: DATA-1 CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test
+        run: ./gradlew test
+      - name: Verify repository contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f schemas/corpus-draw-record.schema.json
+          test -f schemas/game-era.schema.json
+          test -f schemas/source-evidence.schema.json
+          test -f schemas/coverage-record.schema.json
+          test -f schemas/corpus-manifest.schema.json
+          test "$(wc -l < data/catalog/acquisition_inventory.csv)" -eq 1
+          test "$(wc -l < data/catalog/source_inventory.csv)" -eq 1
+          grep -Fx 'RECURRING_CLOUD_CASH_COST_TARGET=$0' docs/COST_BOUNDARY.md
+          grep -Fx 'PERSONAL_HARDWARE_REQUIRED_FOR_PRODUCTION=NO' docs/COST_BOUNDARY.md
+          grep -Fx 'ADMOB_REVENUE_REQUIRED_FOR_INFRASTRUCTURE=NO' docs/COST_BOUNDARY.md
+          grep -Fx 'FIRESTORE_SPARK_CONTROL_PLANE_ONLY=YES' docs/COST_BOUNDARY.md

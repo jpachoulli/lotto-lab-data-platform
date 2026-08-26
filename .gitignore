@@ -1,0 +1,4 @@
+.gradle/
+.kotlin/
+build/
+*_AUDIT_EXPORT.zip

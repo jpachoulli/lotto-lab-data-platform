@@ -1,0 +1,7 @@
+An internal immutableListCopy helper always creates a new ArrayList and exposes it through Collections.unmodifiableList. It preserves order and performs no sorting.
+
+CorpusDrawRecord, DrawPublicMetadataRecord, and CorpusManifest are immutable value classes. Their collection properties are defensive runtime-unmodifiable snapshots. CorpusDrawRecord retains a named-argument-compatible copy function whose list replacements are also snapshotted. All three retain field-based equality, hashCode, and toString semantics.
+
+CorpusContractValidator.Result defensively snapshots all four result collections. acceptedStatuses is now private. No validation branches, normalization rules, fingerprint logic, schemas, catalogs, workflow, architecture, or Gradle versions changed.
+
+The predecessor D001 live manifest was verified 37/37 before repair edits. Post-repair Stage 1 verifies the same 37/37 against the immutable predecessor ZIP because the live repaired tree intentionally differs in the three authorized existing files.

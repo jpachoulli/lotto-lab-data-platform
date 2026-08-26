@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lotto-lab.example/schemas/corpus-draw-record.schema.json",
+  "title": "CorpusDrawRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stableId", "gameId", "eraId", "drawDate", "drawTimestampMillis", "drawSession", "mainValues", "bonusValues", "sourceReference", "validationStatus", "origin", "sourceEvidenceId", "isSample"],
+  "properties": {
+    "stableId": {"type": "string", "minLength": 1}, "gameId": {"type": "string", "minLength": 1},
+    "eraId": {"type": "string", "minLength": 1}, "drawDate": {"type": "string", "format": "date"},
+    "drawTimestampMillis": {"type": ["integer", "null"]}, "drawSession": {"type": ["string", "null"]},
+    "mainValues": {"type": "array", "items": {"type": "integer"}}, "bonusValues": {"type": "array", "items": {"type": "integer"}},
+    "sourceReference": {"type": "string", "minLength": 1},
+    "validationStatus": {"type": "string", "enum": ["SOURCE_VALIDATED", "OFFICIAL_VERIFIED"]},
+    "origin": {"type": "string", "minLength": 1}, "sourceEvidenceId": {"type": "string", "minLength": 1}, "isSample": {"type": "boolean"}
+  }
+}

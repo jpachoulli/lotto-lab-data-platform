@@ -1,0 +1,13 @@
+Workspace: /workspaces/lotto-lab-data-platform
+Remote: https://github.com/jpachoulli/lotto-lab-data-platform
+Branch: main
+HEAD: 560b80a451b66d3db5134b175e1a3523bf56ef59
+origin/main: 560b80a451b66d3db5134b175e1a3523bf56ef59
+Intended repository regular-file count excluding forensic ZIPs and caches: 50
+Modified authorized predecessor files: 3
+Created repair test files: 1
+Created R1 audit files: 11
+Deleted files: 0
+Staged files: 0
+Modified tracked files: 0
+DATA-2 started: NO
