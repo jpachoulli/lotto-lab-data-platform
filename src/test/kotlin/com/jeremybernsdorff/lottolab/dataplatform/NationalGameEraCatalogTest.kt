@@ -40,6 +40,11 @@ class NationalGameEraCatalogTest {
         Boundary("powerball", "2012-01-18", listOf(6, 29, 34, 44, 50), 28, "powerball_59_35_2012"),
         Boundary("powerball", "2015-10-03", listOf(6, 26, 33, 44, 46), 4, "powerball_59_35_2012"),
         Boundary("powerball", "2015-10-07", listOf(18, 30, 40, 48, 52), 9, "powerball_69_26_2015"),
+        Boundary("mega_millions", "1996-09-06", listOf(5, 11, 29, 47, 50), 17, "mega_millions_big_game_50_25_1996"),
+        Boundary("mega_millions", "1999-01-12", listOf(5, 7, 9, 20, 46), 2, "mega_millions_big_game_50_25_1996"),
+        Boundary("mega_millions", "1999-01-15", listOf(17, 18, 28, 42, 48), 8, "mega_millions_big_game_50_36_1999"),
+        Boundary("mega_millions", "2002-05-14", listOf(23, 30, 36, 44, 47), 28, "mega_millions_big_game_50_36_1999"),
+        Boundary("mega_millions", "2002-05-17", listOf(15, 18, 25, 33, 47), 30, "mega_millions_52_52_2002"),
         Boundary("mega_millions", "2005-06-21", listOf(9, 13, 40, 46, 50), 30, "mega_millions_52_52_2002"),
         Boundary("mega_millions", "2005-06-24", listOf(14, 43, 44, 50, 56), 7, "mega_millions_56_46_2005"),
         Boundary("mega_millions", "2013-10-15", listOf(4, 23, 30, 43, 50), 11, "mega_millions_56_46_2005"),
@@ -54,10 +59,10 @@ class NationalGameEraCatalogTest {
     @Test
     fun catalogContainsExactlyTheAcceptedUniqueNationalEras() {
         assertEquals(7, NationalGameEraCatalog.forGame("powerball").size)
-        assertEquals(5, NationalGameEraCatalog.forGame("mega_millions").size)
+        assertEquals(7, NationalGameEraCatalog.forGame("mega_millions").size)
         assertEquals(1, NationalGameEraCatalog.forGame("lotto_america").size)
-        assertEquals(13, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
-        assertEquals(13, NationalGameEraCatalog.eras.size)
+        assertEquals(15, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
+        assertEquals(15, NationalGameEraCatalog.eras.size)
     }
 
     @Test
@@ -70,6 +75,8 @@ class NationalGameEraCatalogTest {
             listOf("powerball_59_39_2009", "2009-01-07", "2012-01-18", "59", "39"),
             listOf("powerball_59_35_2012", "2012-01-18", "2015-10-07", "59", "35"),
             listOf("powerball_69_26_2015", "2015-10-07", null, "69", "26"),
+            listOf("mega_millions_big_game_50_25_1996", "1996-09-06", "1999-01-13", "50", "25"),
+            listOf("mega_millions_big_game_50_36_1999", "1999-01-13", "2002-05-17", "50", "36"),
             listOf("mega_millions_52_52_2002", "2002-05-17", "2005-06-24", "52", "52"),
             listOf("mega_millions_56_46_2005", "2005-06-24", "2013-10-22", "56", "46"),
             listOf("mega_millions_75_15_2013", "2013-10-22", "2017-10-31", "75", "15"),
@@ -124,6 +131,25 @@ class NationalGameEraCatalogTest {
         expected.forEach { (date, eraId) ->
             assertEquals(listOf(eraId),
                 NationalGameEraCatalog.resolve("powerball", LocalDate.parse(date)).map { it.eraId })
+        }
+    }
+
+    @Test
+    fun megaLineageStartsAtFirstBigGameDrawingAndTransitionsThroughMegaMillions() {
+        assertTrue(NationalGameEraCatalog.resolve("mega_millions", LocalDate.parse("1996-09-05")).isEmpty())
+        val expected = listOf(
+            "1996-09-06" to "mega_millions_big_game_50_25_1996",
+            "1999-01-13" to "mega_millions_big_game_50_36_1999",
+            "2002-05-17" to "mega_millions_52_52_2002",
+            "2005-06-24" to "mega_millions_56_46_2005",
+            "2013-10-22" to "mega_millions_75_15_2013",
+            "2017-10-31" to "mega_millions_70_25_2017",
+            "2025-04-08" to "mega_millions_70_24_2025",
+            "2026-08-28" to "mega_millions_70_24_2025"
+        )
+        expected.forEach { (date, eraId) ->
+            assertEquals(listOf(eraId),
+                NationalGameEraCatalog.resolve("mega_millions", LocalDate.parse(date)).map { it.eraId })
         }
     }
 

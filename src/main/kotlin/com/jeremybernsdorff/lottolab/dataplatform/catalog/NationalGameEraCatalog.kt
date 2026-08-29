@@ -15,6 +15,8 @@ object NationalGameEraCatalog {
             era("powerball", "powerball_59_39_2009", "2009-01-07", "2012-01-18", 59, 39),
             era("powerball", "powerball_59_35_2012", "2012-01-18", "2015-10-07", 59, 35),
             era("powerball", "powerball_69_26_2015", "2015-10-07", null, 69, 26),
+            era("mega_millions", "mega_millions_big_game_50_25_1996", "1996-09-06", "1999-01-13", 50, 25),
+            era("mega_millions", "mega_millions_big_game_50_36_1999", "1999-01-13", "2002-05-17", 50, 36),
             era("mega_millions", "mega_millions_52_52_2002", "2002-05-17", "2005-06-24", 52, 52),
             era("mega_millions", "mega_millions_56_46_2005", "2005-06-24", "2013-10-22", 56, 46),
             era("mega_millions", "mega_millions_75_15_2013", "2013-10-22", "2017-10-31", 75, 15),
