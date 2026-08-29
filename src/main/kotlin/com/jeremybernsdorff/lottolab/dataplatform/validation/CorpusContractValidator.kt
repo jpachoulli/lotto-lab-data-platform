@@ -36,20 +36,23 @@ object CorpusContractValidator {
         records.forEach { record ->
             val resolved = eras.filter { it.gameId == record.gameId && contains(it, record.drawDate) }
             val status = record.validationStatus.trim().uppercase(Locale.US)
-            val rule = resolved.singleOrNull()?.rule
+            val drawResultRule = resolved.singleOrNull()?.drawResultRule
             val identityPresent = listOf(
                 record.stableId, record.gameId, record.eraId, record.sourceReference,
                 record.origin, record.sourceEvidenceId
             ).all { it.isNotBlank() }
-            val mainValid = rule != null &&
-                record.mainValues.size == rule.mainNumberCount &&
-                record.mainValues.all { it in rule.mainMinimum..rule.mainMaximum } &&
-                (!rule.mainNumbersUnique || record.mainValues.distinct().size == record.mainValues.size)
-            val bonusValid = rule != null &&
-                record.bonusValues.size == rule.bonusNumberCount &&
-                (rule.bonusNumberCount == 0 || record.bonusValues.all { it in rule.bonusMinimum!!..rule.bonusMaximum!! }) &&
-                (rule.bonusMayRepeat || record.bonusValues.distinct().size == record.bonusValues.size) &&
-                (rule.bonusMayOverlapMain || record.bonusValues.none(record.mainValues::contains))
+            val mainValid = drawResultRule != null &&
+                record.mainValues.size == drawResultRule.mainNumberCount &&
+                record.mainValues.all { it in drawResultRule.mainMinimum..drawResultRule.mainMaximum } &&
+                (!drawResultRule.mainNumbersUnique || record.mainValues.distinct().size == record.mainValues.size)
+            val bonusValid = drawResultRule != null &&
+                record.bonusValues.size in
+                    drawResultRule.bonusNumberCountMinimum..drawResultRule.bonusNumberCountMaximum &&
+                (record.bonusValues.isEmpty() || record.bonusValues.all {
+                    it in drawResultRule.bonusMinimum!!..drawResultRule.bonusMaximum!!
+                }) &&
+                (drawResultRule.bonusMayRepeat || record.bonusValues.distinct().size == record.bonusValues.size) &&
+                (drawResultRule.bonusMayOverlapMain || record.bonusValues.none(record.mainValues::contains))
             if (!identityPresent || record.isSample || status !in acceptedStatuses ||
                 record.sourceEvidenceId !in evidenceIds || record.drawDate > validationDate ||
                 resolved.size != 1 || resolved.singleOrNull()?.eraId != record.eraId || !mainValid || !bonusValid
@@ -59,7 +62,7 @@ object CorpusContractValidator {
                 valid += record.copy(
                     validationStatus = status,
                     drawSession = normalizedSession(record.drawSession).ifEmpty { null },
-                    mainValues = if (rule!!.orderMatters) record.mainValues.toList() else record.mainValues.sorted(),
+                    mainValues = if (drawResultRule!!.orderMatters) record.mainValues.toList() else record.mainValues.sorted(),
                     bonusValues = record.bonusValues.toList()
                 )
             }

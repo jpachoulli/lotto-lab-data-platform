@@ -1,0 +1,13 @@
+MODIFY_ONLY:
+src/main/kotlin/com/jeremybernsdorff/lottolab/dataplatform/model/CorpusContracts.kt
+src/main/kotlin/com/jeremybernsdorff/lottolab/dataplatform/validation/CorpusContractValidator.kt
+schemas/game-era.schema.json
+src/test/kotlin/com/jeremybernsdorff/lottolab/dataplatform/CorpusContractValidatorTest.kt
+src/test/kotlin/com/jeremybernsdorff/lottolab/dataplatform/CorpusContractImmutabilityTest.kt
+
+CREATE_ONLY:
+src/test/kotlin/com/jeremybernsdorff/lottolab/dataplatform/DrawResultRuleContractTest.kt
+docs/audit/D002F_20260829T013410Z_Draw_Result_Rule_Contract_Repair/*
+
+PRE_EXISTING_DIRTY_STATE_EXCLUDED:
+README.md

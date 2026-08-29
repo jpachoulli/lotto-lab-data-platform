@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://lotto-lab.example/schemas/game-era.schema.json",
   "title": "GameEraRecord", "type": "object", "additionalProperties": false,
-  "required": ["gameId", "eraId", "effectiveFrom", "effectiveUntil", "rule"],
+  "required": ["gameId", "eraId", "effectiveFrom", "effectiveUntil", "drawResultRule"],
   "properties": {
     "gameId": {"type": "string", "minLength": 1}, "eraId": {"type": "string", "minLength": 1},
     "effectiveFrom": {"type": ["string", "null"], "format": "date"}, "effectiveUntil": {"type": ["string", "null"], "format": "date"},
-    "rule": {"$ref": "#/$defs/rule"}
+    "drawResultRule": {"$ref": "#/$defs/drawResultRule"}
   },
-  "$defs": {"rule": {"type": "object", "additionalProperties": false,
-    "required": ["mainNumberCount", "mainMinimum", "mainMaximum", "mainNumbersUnique", "orderMatters", "bonusNumberCount", "bonusMinimum", "bonusMaximum", "bonusMayRepeat", "bonusMayOverlapMain"],
-    "properties": {"mainNumberCount": {"type": "integer", "minimum": 1}, "mainMinimum": {"type": "integer"}, "mainMaximum": {"type": "integer"}, "mainNumbersUnique": {"type": "boolean"}, "orderMatters": {"type": "boolean"}, "bonusNumberCount": {"type": "integer", "minimum": 0}, "bonusMinimum": {"type": ["integer", "null"]}, "bonusMaximum": {"type": ["integer", "null"]}, "bonusMayRepeat": {"type": "boolean"}, "bonusMayOverlapMain": {"type": "boolean"}}
+  "$defs": {"drawResultRule": {"type": "object", "additionalProperties": false,
+    "required": ["mainNumberCount", "mainMinimum", "mainMaximum", "mainNumbersUnique", "orderMatters", "bonusNumberCountMinimum", "bonusNumberCountMaximum", "bonusMinimum", "bonusMaximum", "bonusMayRepeat", "bonusMayOverlapMain"],
+    "properties": {"mainNumberCount": {"type": "integer", "minimum": 1}, "mainMinimum": {"type": "integer"}, "mainMaximum": {"type": "integer"}, "mainNumbersUnique": {"type": "boolean"}, "orderMatters": {"type": "boolean"}, "bonusNumberCountMinimum": {"type": "integer", "minimum": 0}, "bonusNumberCountMaximum": {"type": "integer", "minimum": 0}, "bonusMinimum": {"type": ["integer", "null"]}, "bonusMaximum": {"type": ["integer", "null"]}, "bonusMayRepeat": {"type": "boolean"}, "bonusMayOverlapMain": {"type": "boolean"}}
   }}
 }

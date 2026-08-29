@@ -1,0 +1,8 @@
+NumberSelectionRuleRecord was removed from the data-platform corpus contract and replaced by DrawResultRuleRecord.
+GameEraRecord now owns drawResultRule rather than the ambiguous rule property.
+Main draw-result cardinality remains exact.
+Bonus draw-result cardinality is an inclusive minimum/maximum interval.
+Constructor invariants fail closed for impossible unique ranges and inconsistent bonus ranges.
+No Android ticket-selection model or file was changed.
+No corpus rows or game-era catalog entries were created.
+No Take 5 semantics were assigned.

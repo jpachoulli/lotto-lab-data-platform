@@ -2,7 +2,7 @@ package com.jeremybernsdorff.lottolab.dataplatform
 
 import com.jeremybernsdorff.lottolab.dataplatform.model.CorpusDrawRecord
 import com.jeremybernsdorff.lottolab.dataplatform.model.GameEraRecord
-import com.jeremybernsdorff.lottolab.dataplatform.model.NumberSelectionRuleRecord
+import com.jeremybernsdorff.lottolab.dataplatform.model.DrawResultRuleRecord
 import com.jeremybernsdorff.lottolab.dataplatform.model.SourceEvidenceRecord
 import com.jeremybernsdorff.lottolab.dataplatform.validation.CorpusContractValidator
 import java.time.Instant
@@ -14,7 +14,19 @@ import kotlin.test.assertTrue
 class CorpusContractValidatorTest {
     private val evidence = SourceEvidenceRecord("e1", "s1", "Official", "https://example.test/data", null,
         Instant.parse("2025-01-01T00:00:00Z"), "a".repeat(64), "1", null)
-    private fun rule(order: Boolean = false) = NumberSelectionRuleRecord(3, 1, 9, true, order, 1, 1, 9, false, false)
+    private fun rule(order: Boolean = false) = DrawResultRuleRecord(
+        mainNumberCount = 3,
+        mainMinimum = 1,
+        mainMaximum = 9,
+        mainNumbersUnique = true,
+        orderMatters = order,
+        bonusNumberCountMinimum = 1,
+        bonusNumberCountMaximum = 1,
+        bonusMinimum = 1,
+        bonusMaximum = 9,
+        bonusMayRepeat = false,
+        bonusMayOverlapMain = false
+    )
     private fun era(id: String = "era", from: String? = "2020-01-01", until: String? = null, order: Boolean = false) =
         GameEraRecord("game", id, from?.let(LocalDate::parse), until?.let(LocalDate::parse), rule(order))
     private fun draw(

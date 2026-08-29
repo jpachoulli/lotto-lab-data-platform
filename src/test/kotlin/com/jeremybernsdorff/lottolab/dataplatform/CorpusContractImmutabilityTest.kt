@@ -6,7 +6,7 @@ import com.jeremybernsdorff.lottolab.dataplatform.model.CorpusManifest
 import com.jeremybernsdorff.lottolab.dataplatform.model.DrawPublicMetadataRecord
 import com.jeremybernsdorff.lottolab.dataplatform.model.GameBundleDescriptor
 import com.jeremybernsdorff.lottolab.dataplatform.model.GameEraRecord
-import com.jeremybernsdorff.lottolab.dataplatform.model.NumberSelectionRuleRecord
+import com.jeremybernsdorff.lottolab.dataplatform.model.DrawResultRuleRecord
 import com.jeremybernsdorff.lottolab.dataplatform.model.PrizeTierRecord
 import com.jeremybernsdorff.lottolab.dataplatform.model.SourceEvidenceRecord
 import com.jeremybernsdorff.lottolab.dataplatform.validation.CorpusContractValidator
@@ -98,7 +98,7 @@ class CorpusContractImmutabilityTest {
         val conflictOne = draw(id = "c", date = "2025-01-02", main = listOf(1, 2, 3))
         val conflictTwo = draw(id = "d", date = "2025-01-02", main = listOf(1, 2, 4))
         val rejected = draw(id = "e", date = "2025-01-03", sample = true)
-        val rule = NumberSelectionRuleRecord(3, 1, 9, true, false, 1, 1, 9, false, false)
+        val rule = DrawResultRuleRecord(3, 1, 9, true, false, 1, 1, 1, 9, false, false)
         val era = GameEraRecord("game", "era", LocalDate.parse("2020-01-01"), null, rule)
         val evidence = SourceEvidenceRecord("evidence-1", "source-1", "Official", "https://example.test/data",
             null, Instant.parse("2025-01-01T00:00:00Z"), "a".repeat(64), "1", null)

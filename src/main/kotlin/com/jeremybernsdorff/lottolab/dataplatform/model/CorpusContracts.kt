@@ -7,13 +7,14 @@ import java.util.Collections
 internal fun <T> immutableListCopy(source: List<T>): List<T> =
     Collections.unmodifiableList(ArrayList(source))
 
-data class NumberSelectionRuleRecord(
+data class DrawResultRuleRecord(
     val mainNumberCount: Int,
     val mainMinimum: Int,
     val mainMaximum: Int,
     val mainNumbersUnique: Boolean,
     val orderMatters: Boolean,
-    val bonusNumberCount: Int,
+    val bonusNumberCountMinimum: Int,
+    val bonusNumberCountMaximum: Int,
     val bonusMinimum: Int?,
     val bonusMaximum: Int?,
     val bonusMayRepeat: Boolean,
@@ -22,10 +23,17 @@ data class NumberSelectionRuleRecord(
     init {
         require(mainNumberCount > 0)
         require(mainMinimum <= mainMaximum)
-        require(bonusNumberCount >= 0)
-        require((bonusMinimum == null) == (bonusMaximum == null))
-        require(bonusNumberCount == 0 || bonusMinimum != null)
-        require(bonusMinimum == null || bonusMinimum <= bonusMaximum!!)
+        require(!mainNumbersUnique || mainNumberCount <= mainMaximum.toLong() - mainMinimum.toLong() + 1L)
+        require(bonusNumberCountMinimum >= 0)
+        require(bonusNumberCountMaximum >= 0)
+        require(bonusNumberCountMinimum <= bonusNumberCountMaximum)
+        if (bonusNumberCountMaximum == 0) {
+            require(bonusMinimum == null && bonusMaximum == null)
+        } else {
+            require(bonusMinimum != null && bonusMaximum != null)
+            require(bonusMinimum <= bonusMaximum)
+            require(bonusMayRepeat || bonusNumberCountMaximum <= bonusMaximum.toLong() - bonusMinimum.toLong() + 1L)
+        }
     }
 }
 
@@ -34,7 +42,7 @@ data class GameEraRecord(
     val eraId: String,
     val effectiveFrom: LocalDate?,
     val effectiveUntil: LocalDate?,
-    val rule: NumberSelectionRuleRecord
+    val drawResultRule: DrawResultRuleRecord
 ) {
     init {
         require(gameId.isNotBlank() && eraId.isNotBlank())

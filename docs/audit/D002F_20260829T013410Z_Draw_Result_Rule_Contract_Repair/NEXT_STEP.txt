@@ -1,0 +1,6 @@
+STOP_AFTER_DATA2F=YES
+DATA2G_STARTED=NO
+DATA3_STARTED=NO
+ACQUISITION_STARTED=NO
+
+Subsequent work may research and populate historically valid draw-result eras, but DATA-2F does not authorize that work.

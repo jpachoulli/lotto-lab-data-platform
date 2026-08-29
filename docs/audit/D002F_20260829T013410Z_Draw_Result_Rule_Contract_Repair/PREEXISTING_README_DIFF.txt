@@ -1,0 +1,14 @@
+README_PREEXISTING_MODIFICATION_PRESENT=YES
+README_HEAD_SHA256=9e563892be63c6d7d661779a802ee21af571fa84e30f202f54e581bd40b99fbb
+README_PRE_EDIT_DIRTY_SHA256=0368e38d3e2fffda56c6f951b2d78a6cae3602404f6fd1f2b5bd117988aa502d
+README_MODIFIED_BY_DATA2F=NO
+
+diff --git a/README.md b/README.md
+index e98dfeb..b2e8faa 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,2 @@
+-# lotto-lab-data-platform
+-Cloud repository for Lotto Lab Data
++
++codex
