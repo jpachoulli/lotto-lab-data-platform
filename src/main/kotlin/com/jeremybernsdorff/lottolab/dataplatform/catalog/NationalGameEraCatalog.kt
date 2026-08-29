@@ -15,7 +15,8 @@ object NationalGameEraCatalog {
             era("mega_millions", "mega_millions_56_46_2005", "2005-06-24", "2013-10-22", 56, 46),
             era("mega_millions", "mega_millions_75_15_2013", "2013-10-22", "2017-10-31", 75, 15),
             era("mega_millions", "mega_millions_70_25_2017", "2017-10-31", "2025-04-08", 70, 25),
-            era("mega_millions", "mega_millions_70_24_2025", "2025-04-08", null, 70, 24)
+            era("mega_millions", "mega_millions_70_24_2025", "2025-04-08", null, 70, 24),
+            era("lotto_america", "lotto_america_52_10_2017", "2017-11-15", null, 52, 10)
         )
     )
 

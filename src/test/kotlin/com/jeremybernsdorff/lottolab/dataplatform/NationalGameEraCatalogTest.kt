@@ -38,18 +38,21 @@ class NationalGameEraCatalogTest {
         Boundary("mega_millions", "2017-10-27", listOf(17, 27, 41, 51, 52), 13, "mega_millions_75_15_2013"),
         Boundary("mega_millions", "2017-10-31", listOf(6, 28, 31, 52, 53), 12, "mega_millions_70_25_2017"),
         Boundary("mega_millions", "2025-04-04", listOf(11, 28, 35, 37, 69), 25, "mega_millions_70_25_2017"),
-        Boundary("mega_millions", "2025-04-08", listOf(10, 16, 50, 60, 61), 17, "mega_millions_70_24_2025")
+        Boundary("mega_millions", "2025-04-08", listOf(10, 16, 50, 60, 61), 17, "mega_millions_70_24_2025"),
+        Boundary("lotto_america", "2017-11-15", listOf(2, 9, 18, 31, 39), 9, "lotto_america_52_10_2017")
     )
 
     @Test
     fun catalogContainsExactlyTheAcceptedUniqueNationalEras() {
         assertEquals(3, NationalGameEraCatalog.forGame("powerball").size)
         assertEquals(5, NationalGameEraCatalog.forGame("mega_millions").size)
-        assertEquals(8, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
+        assertEquals(1, NationalGameEraCatalog.forGame("lotto_america").size)
+        assertEquals(9, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
+        assertEquals(9, NationalGameEraCatalog.eras.size)
     }
 
     @Test
-    fun matricesAndIntervalsMatchAcceptedData2gCandidatesExactly() {
+    fun matricesAndIntervalsMatchAcceptedNationalCandidatesExactly() {
         val expected = listOf(
             listOf("powerball_59_39_2009", "2009-01-07", "2012-01-18", "59", "39"),
             listOf("powerball_59_35_2012", "2012-01-18", "2015-10-07", "59", "35"),
@@ -58,7 +61,8 @@ class NationalGameEraCatalogTest {
             listOf("mega_millions_56_46_2005", "2005-06-24", "2013-10-22", "56", "46"),
             listOf("mega_millions_75_15_2013", "2013-10-22", "2017-10-31", "75", "15"),
             listOf("mega_millions_70_25_2017", "2017-10-31", "2025-04-08", "70", "25"),
-            listOf("mega_millions_70_24_2025", "2025-04-08", null, "70", "24")
+            listOf("mega_millions_70_24_2025", "2025-04-08", null, "70", "24"),
+            listOf("lotto_america_52_10_2017", "2017-11-15", null, "52", "10")
         )
         val actual = NationalGameEraCatalog.eras.map { era ->
             val rule = era.drawResultRule
@@ -77,6 +81,7 @@ class NationalGameEraCatalogTest {
         assertEquals(expected, actual)
         assertNull(NationalGameEraCatalog.eras.single { it.eraId == "powerball_69_26_2015" }.effectiveUntil)
         assertNull(NationalGameEraCatalog.eras.single { it.eraId == "mega_millions_70_24_2025" }.effectiveUntil)
+        assertNull(NationalGameEraCatalog.eras.single { it.eraId == "lotto_america_52_10_2017" }.effectiveUntil)
     }
 
     @Test
@@ -108,6 +113,30 @@ class NationalGameEraCatalogTest {
         val result = validate(listOf(era), draw("overlap", "powerball", era.eraId,
             "2025-01-01", listOf(1, 2, 3, 4, 5), listOf(5)))
         assertEquals(1, result.trustedRecords.size)
+    }
+
+    @Test
+    fun lottoAmericaStartsAtFirstCurrentGameDrawingAndRemainsOpenEnded() {
+        assertTrue(NationalGameEraCatalog.resolve("lotto_america", LocalDate.parse("2017-11-14")).isEmpty())
+        assertEquals(listOf("lotto_america_52_10_2017"),
+            NationalGameEraCatalog.resolve("lotto_america", LocalDate.parse("2017-11-15")).map { it.eraId })
+        assertEquals(listOf("lotto_america_52_10_2017"),
+            NationalGameEraCatalog.resolve("lotto_america", LocalDate.parse("2026-08-26")).map { it.eraId })
+    }
+
+    @Test
+    fun lottoAmericaInvalidCountsRangesAndMainDuplicatesFailClosed() {
+        val era = NationalGameEraCatalog.eras.single { it.eraId == "lotto_america_52_10_2017" }
+        val invalid = listOf(
+            draw("lotto-duplicate", "lotto_america", era.eraId, "2025-01-01", listOf(1, 1, 2, 3, 4), listOf(5)),
+            draw("lotto-main-range", "lotto_america", era.eraId, "2025-01-02", listOf(1, 2, 3, 4, 53), listOf(5)),
+            draw("lotto-bonus-range", "lotto_america", era.eraId, "2025-01-03", listOf(1, 2, 3, 4, 5), listOf(11)),
+            draw("lotto-main-count", "lotto_america", era.eraId, "2025-01-04", listOf(1, 2, 3, 4), listOf(5)),
+            draw("lotto-bonus-count", "lotto_america", era.eraId, "2025-01-05", listOf(1, 2, 3, 4, 5), emptyList())
+        )
+        val result = CorpusContractValidator.validate(invalid, listOf(era), listOf(evidence), LocalDate.parse("2026-08-29"))
+        assertEquals(invalid, result.rejectedRecords)
+        assertTrue(result.trustedRecords.isEmpty())
     }
 
     @Test
