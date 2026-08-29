@@ -27,6 +27,15 @@ class NationalGameEraCatalogTest {
     )
 
     private val boundaries = listOf(
+        Boundary("powerball", "1992-04-22", listOf(2, 25, 35, 41, 42), 15, "powerball_45_45_1992"),
+        Boundary("powerball", "1997-11-01", listOf(22, 25, 28, 33, 37), 20, "powerball_45_45_1992"),
+        Boundary("powerball", "1997-11-05", listOf(2, 19, 24, 28, 35), 26, "powerball_49_42_1997"),
+        Boundary("powerball", "2002-10-05", listOf(14, 19, 22, 39, 43), 12, "powerball_49_42_1997"),
+        Boundary("powerball", "2002-10-09", listOf(9, 10, 38, 42, 43), 5, "powerball_53_42_2002"),
+        Boundary("powerball", "2005-08-27", listOf(8, 22, 31, 39, 44), 11, "powerball_53_42_2002"),
+        Boundary("powerball", "2005-08-31", listOf(13, 17, 19, 41, 50), 13, "powerball_55_42_2005"),
+        Boundary("powerball", "2009-01-03", listOf(17, 22, 24, 38, 55), 24, "powerball_55_42_2005"),
+        Boundary("powerball", "2009-01-07", listOf(23, 31, 33, 38, 52), 24, "powerball_59_39_2009"),
         Boundary("powerball", "2012-01-14", listOf(10, 30, 36, 38, 41), 1, "powerball_59_39_2009"),
         Boundary("powerball", "2012-01-18", listOf(6, 29, 34, 44, 50), 28, "powerball_59_35_2012"),
         Boundary("powerball", "2015-10-03", listOf(6, 26, 33, 44, 46), 4, "powerball_59_35_2012"),
@@ -44,16 +53,20 @@ class NationalGameEraCatalogTest {
 
     @Test
     fun catalogContainsExactlyTheAcceptedUniqueNationalEras() {
-        assertEquals(3, NationalGameEraCatalog.forGame("powerball").size)
+        assertEquals(7, NationalGameEraCatalog.forGame("powerball").size)
         assertEquals(5, NationalGameEraCatalog.forGame("mega_millions").size)
         assertEquals(1, NationalGameEraCatalog.forGame("lotto_america").size)
-        assertEquals(9, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
-        assertEquals(9, NationalGameEraCatalog.eras.size)
+        assertEquals(13, NationalGameEraCatalog.eras.map { it.eraId }.distinct().size)
+        assertEquals(13, NationalGameEraCatalog.eras.size)
     }
 
     @Test
     fun matricesAndIntervalsMatchAcceptedNationalCandidatesExactly() {
         val expected = listOf(
+            listOf("powerball_45_45_1992", "1992-04-22", "1997-11-05", "45", "45"),
+            listOf("powerball_49_42_1997", "1997-11-05", "2002-10-09", "49", "42"),
+            listOf("powerball_53_42_2002", "2002-10-09", "2005-08-31", "53", "42"),
+            listOf("powerball_55_42_2005", "2005-08-31", "2009-01-07", "55", "42"),
             listOf("powerball_59_39_2009", "2009-01-07", "2012-01-18", "59", "39"),
             listOf("powerball_59_35_2012", "2012-01-18", "2015-10-07", "59", "35"),
             listOf("powerball_69_26_2015", "2015-10-07", null, "69", "26"),
@@ -92,6 +105,25 @@ class NationalGameEraCatalogTest {
                 assertEquals(listOf(new.eraId),
                     NationalGameEraCatalog.resolve(new.gameId, new.effectiveFrom!!).map { it.eraId })
             }
+        }
+    }
+
+    @Test
+    fun powerballStartsAtFirstPowerballDrawingAndRemainsContiguous() {
+        assertTrue(NationalGameEraCatalog.resolve("powerball", LocalDate.parse("1992-04-21")).isEmpty())
+        val expected = listOf(
+            "1992-04-22" to "powerball_45_45_1992",
+            "1997-11-05" to "powerball_49_42_1997",
+            "2002-10-09" to "powerball_53_42_2002",
+            "2005-08-31" to "powerball_55_42_2005",
+            "2009-01-07" to "powerball_59_39_2009",
+            "2012-01-18" to "powerball_59_35_2012",
+            "2015-10-07" to "powerball_69_26_2015",
+            "2026-08-15" to "powerball_69_26_2015"
+        )
+        expected.forEach { (date, eraId) ->
+            assertEquals(listOf(eraId),
+                NationalGameEraCatalog.resolve("powerball", LocalDate.parse(date)).map { it.eraId })
         }
     }
 

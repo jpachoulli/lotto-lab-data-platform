@@ -8,6 +8,10 @@ import java.time.LocalDate
 object NationalGameEraCatalog {
     val eras: List<GameEraRecord> = immutableListCopy(
         listOf(
+            era("powerball", "powerball_45_45_1992", "1992-04-22", "1997-11-05", 45, 45),
+            era("powerball", "powerball_49_42_1997", "1997-11-05", "2002-10-09", 49, 42),
+            era("powerball", "powerball_53_42_2002", "2002-10-09", "2005-08-31", 53, 42),
+            era("powerball", "powerball_55_42_2005", "2005-08-31", "2009-01-07", 55, 42),
             era("powerball", "powerball_59_39_2009", "2009-01-07", "2012-01-18", 59, 39),
             era("powerball", "powerball_59_35_2012", "2012-01-18", "2015-10-07", 59, 35),
             era("powerball", "powerball_69_26_2015", "2015-10-07", null, 69, 26),
