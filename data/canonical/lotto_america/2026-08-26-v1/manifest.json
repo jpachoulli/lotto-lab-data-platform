@@ -1,0 +1,24 @@
+{
+  "analyticalFingerprint": "6336c85447363b1eed80b9cc88cae8c34f3d43727395e854f3ebbb9ec314c1c5",
+  "corpusVersion": "lotto-america-2026-08-26-v1",
+  "coverageSha256": "8d89b5b5207a7a7f6027caea75d8f2ce1441cf3d3695ab2dbf0534c0cf123afe",
+  "data2nEvidenceBundleSha256": "da187dfd77dbfef7b3d20a62f6c72e39cd171543a2252def3d7f6592d8ca3a20",
+  "data2oCandidateSha256": "b62dcd92b34ecadb0ff1c00e50a6aea4f9b1ed4d5f0cd3947f72232f709d416e",
+  "drawsSha256": "9e39766a8b477e06c909a0cbbac96f49f5bc80f97af8783587d95e1dff8d37c1",
+  "earliestDrawDate": "2017-11-15",
+  "gameEraIds": [
+    "lotto_america_52_10_2017"
+  ],
+  "gameId": "lotto_america",
+  "latestDrawDate": "2026-08-26",
+  "provenanceSha256": "667439023678359d576741ccd5803bf4e077e6daa1242e287399fc7794d32b79",
+  "publicMetadataSha256": "1e4f5de3c3fd8e881118a9cf115591b7064b80dc6e5c0d9ee8e710359096441c",
+  "recordCount": 1132,
+  "schemaVersion": 1,
+  "sourceEvidenceRecordSha256": "71c95741616e5e915955ada16ceffb24b614f047de1c85ee8d6494031b92ce55",
+  "sourceIds": [
+    "musl_lotto_america",
+    "iowa_lottery_lotto_america"
+  ],
+  "verificationStatus": "DUAL_OFFICIAL_MATCH"
+}

@@ -1,0 +1,11 @@
+{
+  "canonicalSourceUrl": "offline:data2n-dual-official",
+  "evidenceId": "data2o-dual-official",
+  "parserVersion": "data2o-harness-1",
+  "rawSha256": "b62dcd92b34ecadb0ff1c00e50a6aea4f9b1ed4d5f0cd3947f72232f709d416e",
+  "retrievedAtUtc": "2026-08-29T00:00:00Z",
+  "sourceDatasetId": "data2n-cutoff-2026-08-26",
+  "sourceId": "data2n-reconciled",
+  "sourceOrganization": "MUSL and Iowa Lottery",
+  "termsReference": null
+}

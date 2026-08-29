@@ -1,0 +1,13 @@
+{
+  "automationStatus": "MANUAL_BOOTSTRAP",
+  "conflictingDrawCount": 0,
+  "coveragePercent": 100.0,
+  "earliestKnownDraw": "2017-11-15",
+  "eraId": "lotto_america_52_10_2017",
+  "expectedDrawCount": 1132,
+  "gameId": "lotto_america",
+  "latestKnownDraw": "2026-08-26",
+  "missingDrawCount": 0,
+  "sourceStatus": "DUAL_OFFICIAL_VERIFIED",
+  "validatedDrawCount": 1132
+}
