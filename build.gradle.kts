@@ -57,3 +57,77 @@ tasks.test {
         events("passed", "failed", "skipped")
     }
 }
+
+tasks.register<JavaExec>("buildCoreThreePublishableSnapshot") {
+    group = "publication"
+    description =
+        "Builds a PUBLISHABLE core-three snapshot from a strict catch-up summary and the permanent verified ledger"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "com.jeremybernsdorff.lottolab.dataplatform.snapshot.current." +
+            "CoreThreePublishableSnapshotPreparationCli"
+    )
+
+    val descriptor =
+        providers.gradleProperty(
+            "descriptor"
+        ).orElse(
+            "data/distribution/core_three/latest.json"
+        )
+
+    val catchUpSummary =
+        providers.gradleProperty(
+            "catchUpSummary"
+        ).orElse(
+            "build/core-three-catchup-summary.json"
+        )
+
+    val ledgerRoot =
+        providers.gradleProperty(
+            "ledgerRoot"
+        ).orElse(
+            "data/current/core_three/verified"
+        )
+
+    val sourceRepositoryCommit =
+        providers.gradleProperty(
+            "sourceRepositoryCommit"
+        )
+
+    val createdAtUtc =
+        providers.gradleProperty(
+            "createdAtUtc"
+        )
+
+    val outputRoot =
+        providers.gradleProperty(
+            "outputRoot"
+        ).orElse(
+            "build/core-three-publishable"
+        )
+
+    doFirst {
+        require(
+            sourceRepositoryCommit.isPresent
+        ) {
+            "-PsourceRepositoryCommit is required"
+        }
+
+        require(
+            createdAtUtc.isPresent
+        ) {
+            "-PcreatedAtUtc is required"
+        }
+
+        setArgs(
+            listOf(
+                descriptor.get(),
+                catchUpSummary.get(),
+                ledgerRoot.get(),
+                sourceRepositoryCommit.get(),
+                createdAtUtc.get(),
+                outputRoot.get()
+            )
+        )
+    }
+}
