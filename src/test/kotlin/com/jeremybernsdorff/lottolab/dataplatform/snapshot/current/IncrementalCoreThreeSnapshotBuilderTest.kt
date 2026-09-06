@@ -10,8 +10,10 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.TimeZone
 
 class IncrementalCoreThreeSnapshotBuilderTest {
     @Test fun currentScheduleProducesExactPowerballGap() {
@@ -233,6 +235,198 @@ class IncrementalCoreThreeSnapshotBuilderTest {
             val accepted = Files.readAllBytes(Path.of("src/test/resources/snapshot/current/accepted-candidate.zip"))
             assertContentEquals(accepted, generated)
         } finally { deleteTree(output) }
+    }
+
+    @Test
+    fun sourceCatalogManifestHashIsStableAcrossLfAndCrlfCheckouts() {
+        val raw =
+            Files.readAllBytes(
+                Path.of(
+                    "src/main/kotlin/com/jeremybernsdorff/" +
+                        "lottolab/dataplatform/catalog/" +
+                        "NationalGameEraCatalog.kt"
+                )
+            )
+
+        val lfText =
+            raw.toString(
+                Charsets.UTF_8
+            )
+                .replace(
+                    "\r\n",
+                    "\n"
+                )
+
+        require(
+            '\r' !in lfText
+        )
+
+        val lf =
+            lfText.toByteArray(
+                Charsets.UTF_8
+            )
+
+        val crlf =
+            lfText
+                .replace(
+                    "\n",
+                    "\r\n"
+                )
+                .toByteArray(
+                    Charsets.UTF_8
+                )
+
+        val expected =
+            "86ccdfb8b31f1bd5508554b5ed70a9a47b78410e0189e78757f9930568972c84"
+
+        assertContentEquals(
+            canonicalSourceCatalogKotlinBytes(
+                lf
+            ),
+            canonicalSourceCatalogKotlinBytes(
+                crlf
+            )
+        )
+
+        assertEquals(
+            expected,
+            sha256(
+                canonicalSourceCatalogKotlinBytes(
+                    lf
+                )
+            )
+        )
+
+        assertEquals(
+            expected,
+            sha256(
+                canonicalSourceCatalogKotlinBytes(
+                    crlf
+                )
+            )
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            canonicalSourceCatalogKotlinBytes(
+                "a\rb".toByteArray(
+                    Charsets.UTF_8
+                )
+            )
+        }
+    }
+
+    @Test
+    fun deterministicZipEntryEpochRepresentsCanonicalLocalMidnight() {
+        assertEquals(
+            315532800000L,
+            deterministicZipEntryEpochMillis(
+                ZoneId.of(
+                    "UTC"
+                )
+            )
+        )
+
+        assertEquals(
+            315558000000L,
+            deterministicZipEntryEpochMillis(
+                ZoneId.of(
+                    "America/Denver"
+                )
+            )
+        )
+    }
+
+    @Test
+    fun acceptedCandidateBytesRemainExactUnderUtcDefaultTimezone() {
+        val originalTimeZone =
+            TimeZone.getDefault()
+
+        val output =
+            Files.createTempDirectory(
+                "builder-b2-utc"
+            )
+
+        try {
+            TimeZone.setDefault(
+                TimeZone.getTimeZone(
+                    "UTC"
+                )
+            )
+
+            val summary =
+                IncrementalCoreThreeSnapshotBuilder(
+                    acquirer = { _, _, _ ->
+                        error(
+                            "ACQUIRER_MUST_NOT_BE_CALLED"
+                        )
+                    }
+                ).buildFromVerifiedLedger(
+                    descriptor,
+                    fullThroughDates(),
+                    BuildContext(
+                        Instant.parse(
+                            "2026-09-05T15:00:00Z"
+                        ),
+                        "0".repeat(
+                            40
+                        ),
+                        1,
+                        "CANDIDATE"
+                    ),
+                    output,
+                    Path.of(
+                        "data/current/core_three/verified"
+                    )
+                )
+
+            assertEquals(
+                "9b812294b5a065ec7b867cb14f1d47d7923301e719394bf4f09fbf45b4414791",
+                summary.archiveSha256
+            )
+
+            assertEquals(
+                433104L,
+                summary.archiveByteSize
+            )
+
+            assertEquals(
+                "723c59e70dbe0274a685d731423ca262c347ff4f20f8a8babc9f5f6dd7e0aad9",
+                summary.manifestSha256
+            )
+
+            assertEquals(
+                "f1c4ecdeb07fb7cfe03cb11a0bccc6c0a6d73420accd17393aed9e4e1676b957",
+                summary.bundleContentId
+            )
+
+            val generated =
+                Files.readAllBytes(
+                    output.resolve(
+                        "artifact/${summary.snapshotVersion}.zip"
+                    )
+                )
+
+            val accepted =
+                Files.readAllBytes(
+                    Path.of(
+                        "src/test/resources/snapshot/current/" +
+                            "accepted-candidate.zip"
+                    )
+                )
+
+            assertContentEquals(
+                accepted,
+                generated
+            )
+        } finally {
+            TimeZone.setDefault(
+                originalTimeZone
+            )
+
+            deleteTree(
+                output
+            )
+        }
     }
 
     private fun fullThroughDates() = mapOf("powerball" to LocalDate.parse("2026-09-02"), "mega_millions" to LocalDate.parse("2026-09-01"), "lotto_america" to LocalDate.parse("2026-09-02"))

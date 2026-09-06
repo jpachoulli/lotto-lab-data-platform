@@ -10,9 +10,67 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+
+private val SOURCE_CATALOG_KOTLIN_PATH =
+    Path.of(
+        "src/main/kotlin/com/jeremybernsdorff/lottolab/" +
+            "dataplatform/catalog/NationalGameEraCatalog.kt"
+    )
+
+private val DETERMINISTIC_ZIP_LOCAL_TIME =
+    LocalDateTime.of(
+        1980,
+        1,
+        1,
+        0,
+        0,
+        0
+    )
+
+internal fun canonicalSourceCatalogKotlinBytes(
+    raw: ByteArray
+): ByteArray {
+    val text =
+        raw.toString(
+            Charsets.UTF_8
+        )
+
+    val normalizedLf =
+        text.replace(
+            "\r\n",
+            "\n"
+        )
+
+    require(
+        '\r' !in normalizedLf
+    ) {
+        "SOURCE_CATALOG_UNSUPPORTED_CR_LINE_ENDING"
+    }
+
+    return normalizedLf
+        .replace(
+            "\n",
+            "\r\n"
+        )
+        .toByteArray(
+            Charsets.UTF_8
+        )
+}
+
+internal fun deterministicZipEntryEpochMillis(
+    zoneId: ZoneId
+): Long =
+    DETERMINISTIC_ZIP_LOCAL_TIME
+        .atZone(
+            zoneId
+        )
+        .toInstant()
+        .toEpochMilli()
 
 data class CandidateBuildSummary(
     val status: String,
@@ -232,7 +290,16 @@ class IncrementalCoreThreeSnapshotBuilder(
         (root["eraCatalog"] as ObjectNode).apply {
             put("sha256", sha256(members.getValue("eras.json")))
             put("byteSize", members.getValue("eras.json").size)
-            put("sourceCatalogKotlinSha256", sha256(Files.readAllBytes(Path.of("src/main/kotlin/com/jeremybernsdorff/lottolab/dataplatform/catalog/NationalGameEraCatalog.kt"))))
+            put(
+                "sourceCatalogKotlinSha256",
+                sha256(
+                    canonicalSourceCatalogKotlinBytes(
+                        Files.readAllBytes(
+                            SOURCE_CATALOG_KOTLIN_PATH
+                        )
+                    )
+                )
+            )
         }
         val gamesNode = root["games"] as ArrayNode; gamesNode.forEach { g -> val game=g["gameId"].asText(); val o=g as ObjectNode; o.put("recordCount", all.getValue(game).size - 1); o.put("latestDrawDate", all.getValue(game).drop(1).maxOf { it[3] }); val f=o["files"] as ObjectNode; listOf("draws" to "draws/$game.csv", "publicMetadata" to "public_metadata/$game.csv", "provenance" to "provenance/$game.csv").forEach { (k,p) -> (f[k] as ObjectNode).apply { put("sha256", sha256(members.getValue(p))); put("byteSize", members.getValue(p).size); put("recordCount", all.getValue(game).size - 1) } } }
         (root["sourceEvidence"] as ObjectNode).apply { put("sha256", sha256(members.getValue("source_evidence.json"))); put("byteSize", members.getValue("source_evidence.json").size); put("recordCount", B2_JSON.readTree(members.getValue("source_evidence.json")).size()) }
@@ -241,5 +308,53 @@ class IncrementalCoreThreeSnapshotBuilder(
         return (B2_JSON.writeValueAsString(root) + "\n").toByteArray()
     }
     private fun bundleId(members: Map<String, ByteArray>) = sha256(members.filterKeys { it != "manifest.json" }.toSortedMap().entries.joinToString("") { "${it.key}\u0000${sha256(it.value)}\n" }.toByteArray())
-    private fun writeZip(path: Path, members: Map<String, ByteArray>) { ZipOutputStream(Files.newOutputStream(path)).use { z -> z.setLevel(6); members.toSortedMap().forEach { (name,b) -> ZipEntry(name).also { it.time=315558000000L; it.extra=ByteArray(0); it.comment=null; z.putNextEntry(it); z.write(b); z.closeEntry() } } } }
+    private fun writeZip(
+        path: Path,
+        members: Map<String, ByteArray>
+    ) {
+        val zipEntryEpochMillis =
+            deterministicZipEntryEpochMillis(
+                ZoneId.systemDefault()
+            )
+
+        ZipOutputStream(
+            Files.newOutputStream(
+                path
+            )
+        ).use { zip ->
+            zip.setLevel(
+                6
+            )
+
+            members
+                .toSortedMap()
+                .forEach { (name, bytes) ->
+                    val entry =
+                        ZipEntry(
+                            name
+                        ).apply {
+                            time =
+                                zipEntryEpochMillis
+
+                            extra =
+                                ByteArray(
+                                    0
+                                )
+
+                            comment =
+                                null
+                        }
+
+                    zip.putNextEntry(
+                        entry
+                    )
+
+                    zip.write(
+                        bytes
+                    )
+
+                    zip.closeEntry()
+                }
+        }
+    }
 }
