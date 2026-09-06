@@ -1,0 +1,410 @@
+name: Core Three Publication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: core-three-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      LATEST_PATH: data/distribution/core_three/latest.json
+      RELEASE_DESCRIPTOR_DIR: data/distribution/core_three/releases
+      LEDGER_ROOT: data/current/core_three/verified
+      CATCHUP_SUMMARY: build/core-three-catchup-summary.json
+      PUBLISHABLE_ROOT: build/core-three-publishable
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew test --no-daemon --console=plain
+
+      - name: Configure Git identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Catch up verified ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(git branch --show-current)" = "main"
+          test -z "$(git status --porcelain)"
+
+          BASE_LATEST_BLOB="$(git rev-parse "HEAD:${LATEST_PATH}")"
+          echo "BASE_LATEST_BLOB=${BASE_LATEST_BLOB}" >> "$GITHUB_ENV"
+
+          NOW_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          ./gradlew catchUpCoreThree \
+            -Pdescriptor="${LATEST_PATH}" \
+            -PledgerRoot="${LEDGER_ROOT}" \
+            -PnowUtc="${NOW_UTC}" \
+            -Poutput="${CATCHUP_SUMMARY}" \
+            --no-daemon \
+            --console=plain
+
+          CANDIDATE_REQUIRED="$(
+            python3 - "${CATCHUP_SUMMARY}" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], "rb") as handle:
+              data = json.load(handle)
+          value = data.get("candidateRequired")
+          if type(value) is not bool:
+              raise SystemExit("candidateRequired must be boolean")
+          print("true" if value else "false")
+          PY
+          )"
+
+          NEW_LEDGER_COUNT="$(
+            python3 - "${CATCHUP_SUMMARY}" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], "rb") as handle:
+              data = json.load(handle)
+          value = data.get("newlyWrittenLedgerCount")
+          if type(value) is not int or value < 0:
+              raise SystemExit("newlyWrittenLedgerCount must be non-negative integer")
+          print(value)
+          PY
+          )"
+
+          echo "CANDIDATE_REQUIRED=${CANDIDATE_REQUIRED}" >> "$GITHUB_ENV"
+          echo "NEW_LEDGER_COUNT=${NEW_LEDGER_COUNT}" >> "$GITHUB_ENV"
+
+          mapfile -t ALL_CHANGES < <(
+            git status --porcelain --untracked-files=all |
+              sed 's/^...//'
+          )
+
+          if [ "${CANDIDATE_REQUIRED}" = "false" ]; then
+            test "${NEW_LEDGER_COUNT}" -eq 0
+            test "${#ALL_CHANGES[@]}" -eq 0
+            echo "NO_CHANGE=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "NO_CHANGE=false" >> "$GITHUB_ENV"
+
+          for path in "${ALL_CHANGES[@]}"; do
+            case "$path" in
+              data/current/core_three/verified/*.json) ;;
+              *)
+                echo "Unexpected repository mutation: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          test "${#ALL_CHANGES[@]}" -eq "${NEW_LEDGER_COUNT}"
+
+          if [ "${NEW_LEDGER_COUNT}" -gt 0 ]; then
+            git add -- data/current/core_three/verified
+            test "$(git diff --cached --name-only | wc -l | tr -d ' ')" -eq "${NEW_LEDGER_COUNT}"
+            git diff --cached --check
+            git commit -m "DATA: advance verified core-three ledger"
+            git push origin HEAD:main
+          fi
+
+          test -z "$(git status --porcelain)"
+
+          ./gradlew test \
+            --no-daemon \
+            --console=plain
+
+          SOURCE_COMMIT="$(git rev-parse HEAD)"
+
+          test "$(git rev-parse "${SOURCE_COMMIT}:${LATEST_PATH}")" = "${BASE_LATEST_BLOB}"
+
+          SOURCE_CREATED_AT="$(
+            date -u \
+              -d "$(git show -s --format=%cI "${SOURCE_COMMIT}")" \
+              +'%Y-%m-%dT%H:%M:%SZ'
+          )"
+
+          echo "SOURCE_COMMIT=${SOURCE_COMMIT}" >> "$GITHUB_ENV"
+          echo "SOURCE_CREATED_AT=${SOURCE_CREATED_AT}" >> "$GITHUB_ENV"
+
+      - name: Build PUBLISHABLE snapshot
+        if: env.NO_CHANGE != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf "${PUBLISHABLE_ROOT}"
+
+          ./gradlew buildCoreThreePublishableSnapshot \
+            -Pdescriptor="${LATEST_PATH}" \
+            -PcatchUpSummary="${CATCHUP_SUMMARY}" \
+            -PledgerRoot="${LEDGER_ROOT}" \
+            -PsourceRepositoryCommit="${SOURCE_COMMIT}" \
+            -PcreatedAtUtc="${SOURCE_CREATED_AT}" \
+            -PoutputRoot="${PUBLISHABLE_ROOT}" \
+            --no-daemon \
+            --console=plain
+
+          BUILD_METADATA="${PUBLISHABLE_ROOT}/artifact/BUILD_METADATA.json"
+          test -f "${BUILD_METADATA}"
+
+          SNAPSHOT_VERSION="$(
+            python3 - "${BUILD_METADATA}" "${SOURCE_COMMIT}" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], "rb") as handle:
+              data = json.load(handle)
+          if data.get("buildMode") != "PUBLISHABLE":
+              raise SystemExit("buildMode is not PUBLISHABLE")
+          if data.get("publishable") is not True:
+              raise SystemExit("publishable is not true")
+          if data.get("sourceRepositoryCommit") != sys.argv[2]:
+              raise SystemExit("sourceRepositoryCommit mismatch")
+          value = data.get("snapshotVersion")
+          if not isinstance(value, str) or not value:
+              raise SystemExit("invalid snapshotVersion")
+          print(value)
+          PY
+          )"
+
+          ASSET_NAME="${SNAPSHOT_VERSION}.zip"
+          SIDECAR_NAME="${ASSET_NAME}.sha256"
+
+          echo "SNAPSHOT_VERSION=${SNAPSHOT_VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${SNAPSHOT_VERSION}" >> "$GITHUB_ENV"
+          echo "ASSET_NAME=${ASSET_NAME}" >> "$GITHUB_ENV"
+          echo "SIDECAR_NAME=${SIDECAR_NAME}" >> "$GITHUB_ENV"
+
+      - name: Preflight artifact through accepted descriptor boundary
+        if: env.NO_CHANGE != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf build/core-three-release-preflight
+
+          ./gradlew prepareCoreThreeReleaseDescriptor \
+            -PartifactDirectory="${PUBLISHABLE_ROOT}/artifact" \
+            -PpublishedAtUtc="${SOURCE_CREATED_AT}" \
+            -PoutputDescriptor="build/core-three-release-preflight/descriptor.json" \
+            --no-daemon \
+            --console=plain
+
+      - name: Create or verify immutable GitHub Release
+        if: env.NO_CHANGE != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ASSET_PATH="${PUBLISHABLE_ROOT}/artifact/${ASSET_NAME}"
+          SIDECAR_PATH="${PUBLISHABLE_ROOT}/artifact/${SIDECAR_NAME}"
+
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "${SOURCE_COMMIT}"
+          test "$(git rev-parse HEAD)" = "${SOURCE_COMMIT}"
+
+          test -f "${ASSET_PATH}"
+          test -f "${SIDECAR_PATH}"
+
+          set +e
+          API_RESPONSE="$(
+            gh api -i \
+              "repos/${REPOSITORY}/releases/tags/${RELEASE_TAG}" \
+              2>&1
+          )"
+          API_EXIT=$?
+          set -e
+
+          if [ "${API_EXIT}" -eq 0 ]; then
+            RELEASE_EXISTS=true
+          elif printf '%s\n' "${API_RESPONSE}" | grep -Eq '^HTTP/[0-9.]+ 404'; then
+            RELEASE_EXISTS=false
+          else
+            printf '%s\n' "${API_RESPONSE}" >&2
+            exit "${API_EXIT}"
+          fi
+
+          if [ "${RELEASE_EXISTS}" = "false" ]; then
+            test -z "$(git ls-remote origin "refs/tags/${RELEASE_TAG}")"
+
+            gh release create "${RELEASE_TAG}" \
+              "${ASSET_PATH}" \
+              "${SIDECAR_PATH}" \
+              --repo "${REPOSITORY}" \
+              --target "${SOURCE_COMMIT}" \
+              --title "Lotto Lab Core Three Snapshot  ${RELEASE_TAG}" \
+              --notes "Verified Core Three snapshot ${RELEASE_TAG}. Source repository commit: ${SOURCE_COMMIT}. Consumers must verify SHA-256 before import."
+          fi
+
+          gh release view "${RELEASE_TAG}" \
+            --repo "${REPOSITORY}" \
+            --json tagName,targetCommitish,isDraft,isPrerelease,publishedAt,assets \
+            > build/core-three-release.json
+
+          python3 - \
+            build/core-three-release.json \
+            "${RELEASE_TAG}" \
+            "${SOURCE_COMMIT}" \
+            "${ASSET_NAME}" \
+            "${SIDECAR_NAME}" <<'PY'
+          import json
+          import sys
+          path, tag, commit, asset, sidecar = sys.argv[1:]
+          with open(path, "rb") as handle:
+              data = json.load(handle)
+          if data.get("tagName") != tag:
+              raise SystemExit("release tag mismatch")
+          if data.get("targetCommitish") != commit:
+              raise SystemExit("release target commit mismatch")
+          if data.get("isDraft") is not False:
+              raise SystemExit("release is draft")
+          if data.get("isPrerelease") is not False:
+              raise SystemExit("release is prerelease")
+          published = data.get("publishedAt")
+          if not isinstance(published, str) or not published:
+              raise SystemExit("release publishedAt missing")
+          names = [item.get("name") for item in data.get("assets", [])]
+          if sorted(names) != sorted([asset, sidecar]):
+              raise SystemExit("release asset set mismatch")
+          print(published)
+          PY
+
+          git fetch origin \
+            "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+
+          test "$(git rev-list -n 1 "${RELEASE_TAG}")" = "${SOURCE_COMMIT}"
+
+          rm -rf build/core-three-release-download
+          mkdir -p build/core-three-release-download
+
+          gh release download "${RELEASE_TAG}" \
+            --repo "${REPOSITORY}" \
+            --pattern "${ASSET_NAME}" \
+            --pattern "${SIDECAR_NAME}" \
+            --dir build/core-three-release-download
+
+          cmp "${ASSET_PATH}" "build/core-three-release-download/${ASSET_NAME}"
+          cmp "${SIDECAR_PATH}" "build/core-three-release-download/${SIDECAR_NAME}"
+
+          RELEASE_PUBLISHED_AT="$(
+            python3 - build/core-three-release.json <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], "rb") as handle:
+              print(json.load(handle)["publishedAt"])
+          PY
+          )"
+
+          echo "RELEASE_PUBLISHED_AT=${RELEASE_PUBLISHED_AT}" >> "$GITHUB_ENV"
+
+      - name: Advance immutable descriptor and latest last
+        if: env.NO_CHANGE != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+
+          test "$(git rev-parse origin/main)" = "${SOURCE_COMMIT}"
+          test "$(git rev-parse HEAD)" = "${SOURCE_COMMIT}"
+          test "$(git rev-parse "${SOURCE_COMMIT}:${LATEST_PATH}")" = "${BASE_LATEST_BLOB}"
+
+          VERSIONED_DESCRIPTOR="${RELEASE_DESCRIPTOR_DIR}/${RELEASE_TAG}.json"
+
+          ./gradlew prepareCoreThreeReleaseDescriptor \
+            -PartifactDirectory="${PUBLISHABLE_ROOT}/artifact" \
+            -PpublishedAtUtc="${RELEASE_PUBLISHED_AT}" \
+            -PoutputDescriptor="${VERSIONED_DESCRIPTOR}" \
+            --no-daemon \
+            --console=plain
+
+          cp "${VERSIONED_DESCRIPTOR}" "${LATEST_PATH}"
+          cmp "${VERSIONED_DESCRIPTOR}" "${LATEST_PATH}"
+
+          mapfile -t CHANGED < <(
+            git status --porcelain --untracked-files=all |
+              sed 's/^...//'
+          )
+
+          test "${#CHANGED[@]}" -eq 2
+
+          printf '%s\n' "${CHANGED[@]}" | sort > build/descriptor-changed-paths.txt
+          printf '%s\n' "${LATEST_PATH}" "${VERSIONED_DESCRIPTOR}" | sort > build/descriptor-expected-paths.txt
+          cmp build/descriptor-changed-paths.txt build/descriptor-expected-paths.txt
+
+          git add -- "${VERSIONED_DESCRIPTOR}" "${LATEST_PATH}"
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" -eq 2
+
+          ./gradlew test \
+            --no-daemon \
+            --console=plain
+
+          git commit -m "DATA: publish verified core-three snapshot ${RELEASE_TAG}"
+          git push origin HEAD:main
+
+      - name: Verify final publication state
+        if: env.NO_CHANGE != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+
+          test "$(git rev-parse origin/main)" = "$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain)"
+
+          VERSIONED_DESCRIPTOR="${RELEASE_DESCRIPTOR_DIR}/${RELEASE_TAG}.json"
+          cmp "${VERSIONED_DESCRIPTOR}" "${LATEST_PATH}"
+
+          python3 - \
+            "${LATEST_PATH}" \
+            "${RELEASE_TAG}" \
+            "${SOURCE_COMMIT}" \
+            "${ASSET_NAME}" \
+            "${SIDECAR_NAME}" <<'PY'
+          import json
+          import sys
+          path, tag, commit, asset, sidecar = sys.argv[1:]
+          with open(path, "rb") as handle:
+              data = json.load(handle)
+          if data.get("snapshotVersion") != tag:
+              raise SystemExit("latest snapshotVersion mismatch")
+          if data.get("releaseTag") != tag:
+              raise SystemExit("latest releaseTag mismatch")
+          if data.get("sourceRepositoryCommit") != commit:
+              raise SystemExit("latest sourceRepositoryCommit mismatch")
+          if data.get("assetName") != asset:
+              raise SystemExit("latest assetName mismatch")
+          if data.get("sidecarName") != sidecar:
+              raise SystemExit("latest sidecarName mismatch")
+          PY
+
+      - name: No-change proof
+        if: env.NO_CHANGE == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          echo "No mature verified frontier change; publication skipped."
