@@ -131,3 +131,56 @@ tasks.register<JavaExec>("buildCoreThreePublishableSnapshot") {
         )
     }
 }
+
+tasks.register<JavaExec>("prepareCoreThreeReleaseDescriptor") {
+    group = "publication"
+    description =
+        "Verifies a PUBLISHABLE core-three artifact and prepares its release descriptor without remote mutation"
+
+    classpath =
+        sourceSets["main"].runtimeClasspath
+
+    mainClass.set(
+        "com.jeremybernsdorff.lottolab.dataplatform.snapshot.current." +
+            "CoreThreeReleaseDescriptorPreparationCli"
+    )
+
+    val artifactDirectory =
+        providers.gradleProperty(
+            "artifactDirectory"
+        )
+
+    val publishedAtUtc =
+        providers.gradleProperty(
+            "publishedAtUtc"
+        )
+
+    val outputDescriptor =
+        providers.gradleProperty(
+            "outputDescriptor"
+        ).orElse(
+            "build/core-three-release-descriptor/descriptor.json"
+        )
+
+    doFirst {
+        require(
+            artifactDirectory.isPresent
+        ) {
+            "-PartifactDirectory is required"
+        }
+
+        require(
+            publishedAtUtc.isPresent
+        ) {
+            "-PpublishedAtUtc is required"
+        }
+
+        setArgs(
+            listOf(
+                artifactDirectory.get(),
+                publishedAtUtc.get(),
+                outputDescriptor.get()
+            )
+        )
+    }
+}
