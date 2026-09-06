@@ -12,24 +12,34 @@ import kotlin.test.assertTrue
 class CoreThreeVerifiedDrawValidatorTest {
 
     private val ledgerRoot =
-        Path.of(
-            "data/current/core_three/verified"
-        )
+        CoreThreeRepositoryTestFixtures.permanentLedgerRoot
 
     private fun ledgerFiles(): List<Path> =
-        Files.walk(
-            ledgerRoot
-        ).use { stream ->
-            stream
-                .filter(Files::isRegularFile)
-                .sorted()
-                .toList()
-        }
+        CoreThreeRepositoryTestFixtures
+            .allPermanentLedgerFiles(
+                ledgerRoot
+            )
 
     @Test
-    fun allTwelveAcceptedPermanentLedgersValidate() {
+    fun allMaterializedPermanentLedgersValidate() {
+        val bootstrap =
+            CoreThreeRepositoryTestFixtures
+                .requireBootstrapLedgerPresent(
+                    ledgerRoot
+                )
+
+        assertEquals(
+            12,
+            bootstrap.size
+        )
+
         val files = ledgerFiles()
-        assertEquals(12, files.size)
+
+        assertTrue(
+            files.size >=
+                bootstrap.size
+        )
+
         files.forEach { path ->
             val draw =
                 VerifiedCurrentDrawLedger.read(

@@ -15,17 +15,34 @@ import kotlin.test.assertTrue
 
 class VerifiedCurrentDrawLedgerTest {
 
-    private val ledgerRoot = Path.of("data/current/core_three/verified")
+    private val ledgerRoot =
+        CoreThreeRepositoryTestFixtures.permanentLedgerRoot
 
     private val powerballPath = ledgerRoot.resolve("powerball/2026-09-02.json")
 
     @Test
-    fun allTwelveAcceptedLedgersStrictReadAndRoundTripByteExact() {
-        val files = Files.walk(ledgerRoot).use { stream ->
-            stream.filter(Files::isRegularFile).sorted().toList()
-        }
+    fun allMaterializedLedgersStrictReadAndRoundTripByteExact() {
+        val bootstrap =
+            CoreThreeRepositoryTestFixtures
+                .requireBootstrapLedgerPresent(
+                    ledgerRoot
+                )
 
-        kotlin.test.assertEquals(12, files.size)
+        assertEquals(
+            12,
+            bootstrap.size
+        )
+
+        val files =
+            CoreThreeRepositoryTestFixtures
+                .allPermanentLedgerFiles(
+                    ledgerRoot
+                )
+
+        assertTrue(
+            files.size >=
+                bootstrap.size
+        )
 
         files.forEach { path ->
             val original = Files.readAllBytes(path)

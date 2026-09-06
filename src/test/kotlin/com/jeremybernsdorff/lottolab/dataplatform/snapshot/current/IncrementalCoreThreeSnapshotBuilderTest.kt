@@ -118,29 +118,31 @@ class IncrementalCoreThreeSnapshotBuilderTest {
         assertEquals("5be2f52e14cb5c50d8628d06f32decd859a0ba109a2f1225b15cd339dfcda1a8", sha256(input))
     }
 
-    @Test fun productionBuilderNeverAcquiresMissingDraw() {
+    @Test
+    fun productionBuilderNeverAcquiresMissingDraw() {
         val output = Files.createTempDirectory("ledger-only-builder")
+        val ledger = Files.createTempDirectory("ledger-only-bootstrap")
         try {
+            CoreThreeRepositoryTestFixtures.materializeBootstrapLedger(ledger)
             val builder = IncrementalCoreThreeSnapshotBuilder(acquirer = { _, _, _ -> error("ACQUIRER_MUST_NOT_BE_CALLED") })
             val summary = builder.buildFromVerifiedLedger(
                 descriptor,
                 mapOf("powerball" to LocalDate.parse("2026-09-02"), "mega_millions" to LocalDate.parse("2026-09-01"), "lotto_america" to LocalDate.parse("2026-09-02")),
-                BuildContext(Instant.parse("2026-09-05T15:00:00Z"), "0".repeat(40), 1, "CANDIDATE"),
-                output,
-                Path.of("data/current/core_three/verified")
-            )
+                BuildContext(Instant.parse("2026-09-05T15:00:00Z"), "0".repeat(40), 1, "CANDIDATE"), output, ledger)
             assertEquals("BUILT", summary.status)
             assertEquals("9b812294b5a065ec7b867cb14f1d47d7923301e719394bf4f09fbf45b4414791", summary.archiveSha256)
             assertEquals(433104, summary.archiveByteSize)
-        } finally { Files.walk(output).sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
+        } finally { deleteTree(output); deleteTree(ledger) }
     }
 
     @Test fun productionBuilderPublishableContextProducesPublishableArtifact() {
         val output = Files.createTempDirectory("ledger-only-publishable")
+        val ledger = Files.createTempDirectory("ledger-only-publishable-bootstrap")
         try {
+            CoreThreeRepositoryTestFixtures.materializeBootstrapLedger(ledger)
             val commit = "1".repeat(40)
             val summary = IncrementalCoreThreeSnapshotBuilder(acquirer = { _, _, _ -> error("ACQUIRER_MUST_NOT_BE_CALLED") })
-                .buildFromVerifiedLedger(descriptor, fullThroughDates(), BuildContext(Instant.parse("2026-09-05T15:00:00Z"), commit, 1, "PUBLISHABLE"), output, Path.of("data/current/core_three/verified"))
+                .buildFromVerifiedLedger(descriptor, fullThroughDates(), BuildContext(Instant.parse("2026-09-05T15:00:00Z"), commit, 1, "PUBLISHABLE"), output, ledger)
             assertEquals("BUILT", summary.status)
             assertTrue(summary.publishable)
             assertEquals(commit, summary.sourceRepositoryCommit)
@@ -149,7 +151,7 @@ class IncrementalCoreThreeSnapshotBuilderTest {
             assertTrue(metadata["publishable"].asBoolean())
             assertEquals(commit, metadata["sourceRepositoryCommit"].asText())
             assertEquals(commit, manifest["sourceRepositoryCommit"].asText())
-        } finally { deleteTree(output) }
+        } finally { deleteTree(output); deleteTree(ledger) }
     }
 
     @Test fun productionBuilderMissingVerifiedLedgerFailsWithoutAcquisition() {
@@ -199,7 +201,7 @@ class IncrementalCoreThreeSnapshotBuilderTest {
         val output = Files.createTempDirectory("builder-unordered-canonical")
         val ledger = Files.createTempDirectory("builder-unordered-ledger")
         try {
-            copyLedger(Path.of("data/current/core_three/verified"), ledger)
+            CoreThreeRepositoryTestFixtures.materializeBootstrapLedger(ledger)
             val rows = StrictCsvCodec.parse(PublishedCoreThreeSnapshotReader().read(descriptor).members.getValue("draws/powerball.csv").toString(Charsets.UTF_8))
             val row = rows.drop(1).maxBy { it[3] }
             val ordered = row.subList(6, 11).map(String::toInt)
@@ -224,9 +226,11 @@ class IncrementalCoreThreeSnapshotBuilderTest {
 
     @Test fun permanentLedgerRebuildRemainsAcceptedB2Bytes() {
         val output = Files.createTempDirectory("builder-b2-identity")
+        val ledger = Files.createTempDirectory("builder-b2-bootstrap")
         try {
+            CoreThreeRepositoryTestFixtures.materializeBootstrapLedger(ledger)
             val summary = IncrementalCoreThreeSnapshotBuilder(acquirer = { _, _, _ -> error("ACQUIRER_MUST_NOT_BE_CALLED") })
-                .buildFromVerifiedLedger(descriptor, fullThroughDates(), BuildContext(Instant.parse("2026-09-05T15:00:00Z"), "0".repeat(40), 1, "CANDIDATE"), output, Path.of("data/current/core_three/verified"))
+                .buildFromVerifiedLedger(descriptor, fullThroughDates(), BuildContext(Instant.parse("2026-09-05T15:00:00Z"), "0".repeat(40), 1, "CANDIDATE"), output, ledger)
             assertEquals("9b812294b5a065ec7b867cb14f1d47d7923301e719394bf4f09fbf45b4414791", summary.archiveSha256)
             assertEquals(433104L, summary.archiveByteSize)
             assertEquals("723c59e70dbe0274a685d731423ca262c347ff4f20f8a8babc9f5f6dd7e0aad9", summary.manifestSha256)
@@ -234,7 +238,7 @@ class IncrementalCoreThreeSnapshotBuilderTest {
             val generated = Files.readAllBytes(output.resolve("artifact/${summary.snapshotVersion}.zip"))
             val accepted = Files.readAllBytes(Path.of("src/test/resources/snapshot/current/accepted-candidate.zip"))
             assertContentEquals(accepted, generated)
-        } finally { deleteTree(output) }
+        } finally { deleteTree(output); deleteTree(ledger) }
     }
 
     @Test
@@ -346,7 +350,13 @@ class IncrementalCoreThreeSnapshotBuilderTest {
                 "builder-b2-utc"
             )
 
+        val ledger =
+            Files.createTempDirectory(
+                "builder-b2-utc-bootstrap"
+            )
+
         try {
+            CoreThreeRepositoryTestFixtures.materializeBootstrapLedger(ledger)
             TimeZone.setDefault(
                 TimeZone.getTimeZone(
                     "UTC"
@@ -374,9 +384,7 @@ class IncrementalCoreThreeSnapshotBuilderTest {
                         "CANDIDATE"
                     ),
                     output,
-                    Path.of(
-                        "data/current/core_three/verified"
-                    )
+                    ledger
                 )
 
             assertEquals(
@@ -423,15 +431,13 @@ class IncrementalCoreThreeSnapshotBuilderTest {
                 originalTimeZone
             )
 
-            deleteTree(
-                output
-            )
+            deleteTree(output)
+            deleteTree(ledger)
         }
     }
 
     private fun fullThroughDates() = mapOf("powerball" to LocalDate.parse("2026-09-02"), "mega_millions" to LocalDate.parse("2026-09-01"), "lotto_america" to LocalDate.parse("2026-09-02"))
     private fun baseCutoffs() = mapOf("powerball" to LocalDate.parse("2026-08-15"), "mega_millions" to LocalDate.parse("2026-08-28"), "lotto_america" to LocalDate.parse("2026-08-26"))
-    private fun copyLedger(source: Path, target: Path) { Files.walk(source).use { stream -> stream.filter(Files::isRegularFile).forEach { file -> val relative = source.relativize(file); val destination = target.resolve(relative.toString()); Files.createDirectories(destination.parent); Files.copy(file, destination) } } }
     private fun deleteTree(root: Path) { if (Files.exists(root)) Files.walk(root).sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
 
     private fun draw(game: String = "powerball", date: LocalDate = LocalDate.parse("2026-09-02"), main: List<Int>? = null, bonus: Int? = null): VerifiedCurrentDraw {
@@ -443,5 +449,6 @@ class IncrementalCoreThreeSnapshotBuilderTest {
         return VerifiedCurrentDraw("$game-$date", game, era.eraId, date, values, listOf(bonusValue), observations)
     }
 
-    private val descriptor: Path = Path.of("data/distribution/core_three/latest.json")
+    private val descriptor: Path =
+        CoreThreeRepositoryTestFixtures.augustDescriptor
 }

@@ -14,26 +14,106 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CoreThreeCatchUpServiceTest {
-    private val descriptor = Path.of("data/distribution/core_three/latest.json")
-    private val permanent = Path.of("data/current/core_three/verified")
+    private val descriptor =
+        CoreThreeRepositoryTestFixtures.augustDescriptor
 
-    @Test fun fixedBootstrapDryRunUsesNoNetwork() {
-        var calls = 0
-        val summary = CoreThreeCatchUpService(
-            acquire = { _, _, _ -> calls++; error("NETWORK_SHOULD_NOT_BE_CALLED") }
-        ).catchUp(descriptor, permanent, Instant.parse("2026-09-03T16:00:00Z"))
-        assertEquals(0, calls)
-        assertEquals(12, summary.reusedLedgerCount)
-        assertEquals(0, summary.newlyWrittenLedgerCount)
-        assertEquals(LocalDate.parse("2026-09-02"), summary.matureThrough)
-        assertTrue(summary.candidateRequired)
-        assertEquals(LocalDate.parse("2026-09-02"), summary.games.getValue("powerball").verifiedFrontier)
-        assertEquals(LocalDate.parse("2026-09-01"), summary.games.getValue("mega_millions").verifiedFrontier)
-        assertEquals(LocalDate.parse("2026-09-02"), summary.games.getValue("lotto_america").verifiedFrontier)
+    private val permanent =
+        CoreThreeRepositoryTestFixtures.permanentLedgerRoot
+
+    @Test
+    fun fixedBootstrapDryRunUsesNoNetwork() {
+        val root =
+            Files.createTempDirectory(
+                "catchup-bootstrap-fixed"
+            )
+
+        try {
+            CoreThreeRepositoryTestFixtures
+                .materializeBootstrapLedger(
+                    root
+                )
+
+            var calls =
+                0
+
+            val summary =
+                CoreThreeCatchUpService(
+                    acquire = { _, _, _ ->
+                        calls++
+                        error(
+                            "NETWORK_SHOULD_NOT_BE_CALLED"
+                        )
+                    }
+                ).catchUp(
+                    descriptor,
+                    root,
+                    Instant.parse(
+                        "2026-09-03T16:00:00Z"
+                    )
+                )
+
+            assertEquals(0, calls)
+            assertEquals(12, summary.reusedLedgerCount)
+            assertEquals(0, summary.newlyWrittenLedgerCount)
+            assertEquals(
+                LocalDate.parse("2026-09-02"),
+                summary.matureThrough
+            )
+            assertTrue(summary.candidateRequired)
+            assertEquals(
+                LocalDate.parse("2026-09-02"),
+                summary.games
+                    .getValue("powerball")
+                    .verifiedFrontier
+            )
+            assertEquals(
+                LocalDate.parse("2026-09-01"),
+                summary.games
+                    .getValue("mega_millions")
+                    .verifiedFrontier
+            )
+            assertEquals(
+                LocalDate.parse("2026-09-02"),
+                summary.games
+                    .getValue("lotto_america")
+                    .verifiedFrontier
+            )
+        } finally {
+            Files.walk(
+                root
+            ).use { stream ->
+                stream
+                    .sorted(
+                        Comparator.reverseOrder()
+                    )
+                    .forEach(
+                        Files::deleteIfExists
+                    )
+            }
+        }
     }
 
-    @Test fun permanentLedgerContainsExactlyTwelveBootstrapRecords() {
-        assertEquals(12, Files.walk(permanent).use { it.filter(Files::isRegularFile).count() })
+    @Test
+    fun acceptedBootstrapTwelveRemainPresentInsideGrowingPermanentLedger() {
+        val bootstrap =
+            CoreThreeRepositoryTestFixtures
+                .requireBootstrapLedgerPresent(
+                    permanent
+                )
+
+        assertEquals(
+            12,
+            bootstrap.size
+        )
+
+        assertTrue(
+            CoreThreeRepositoryTestFixtures
+                .allPermanentLedgerFiles(
+                    permanent
+                )
+                .size >=
+                bootstrap.size
+        )
     }
 
     @Test fun waitingPreventsLaterSameGameAcquisition() {

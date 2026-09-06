@@ -16,7 +16,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CoreThreeCatchUpBehaviorCompletionTest {
-    private val descriptor = Path.of("data/distribution/core_three/latest.json")
+    private val descriptor =
+        CoreThreeRepositoryTestFixtures.augustDescriptor
     private val sep2 = LocalDate.parse("2026-09-02")
 
     @Test

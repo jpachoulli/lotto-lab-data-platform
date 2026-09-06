@@ -2,6 +2,8 @@ name: Core Three Publication
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "17 12,18 * * *"
 
 permissions:
   contents: write

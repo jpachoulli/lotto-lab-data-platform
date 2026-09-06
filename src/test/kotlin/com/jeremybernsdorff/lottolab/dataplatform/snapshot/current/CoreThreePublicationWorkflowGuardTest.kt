@@ -23,7 +23,7 @@ class CoreThreePublicationWorkflowGuardTest {
         )
 
     @Test
-    fun manualPublicationWorkflowHasExactWriteCapableSafetyShape() {
+    fun scheduledPublicationWorkflowHasExactWriteCapableSafetyShape() {
         val workflow =
             canonicalText(
                 publicationWorkflow
@@ -35,10 +35,19 @@ class CoreThreePublicationWorkflowGuardTest {
             )
         )
 
-        assertFalse(
+        assertTrue(
             workflow.contains(
-                "schedule:"
+                "schedule:\n    - cron: \"17 12,18 * * *\""
             )
+        )
+
+        assertEquals(
+            1,
+            Regex(
+                """(?m)^\s*-\s+cron:"""
+            ).findAll(
+                workflow
+            ).count()
         )
 
         assertTrue(
